@@ -1,0 +1,10 @@
+1) aggiungere alla tabelle del menu le caratteristiche e gli allergeni dei prodotti
+2) salvare lo stato dei filtri quando carichi la pagina nuova
+
+3)sito admin
+
+4)grafica
+
+5)documentazione
+
+6)codice qr
