@@ -1,5 +1,5 @@
-1) aggiungere alla tabelle del menu le caratteristiche e gli allergeni dei prodotti
-2) salvare lo stato dei filtri quando carichi la pagina nuova
+
+2) salvare lo stato dei filtri quando carichi la pagina nuova, manca quando cambi categoria
 
 3)sito admin
 

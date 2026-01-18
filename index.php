@@ -24,23 +24,81 @@ try {
 } catch (PDOException $e) {
     $msgErrore = $e->getMessage();
 }
+// Visualizzo la pagina scelta dall'utente.
+if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0&& intval($_GET['pag']) <= $numCategorie) {
+    $pag_numero = intval($_GET['pag']);
+}
 if ($pag_numero === 0 && $numCategorie > 0) {
     $pag_numero = $categorie[0]['id_categoria'];
 }
 
-// Visualizzo la pagina scelta dall'utente.
-if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0) {
-    $pag_numero = intval($_GET['pag']);
-    if ($pag_numero > $numCategorie)
-        $pag_numero = $numCategorie;
+//allergeni
+try {
+    $sql = 'SELECT * FROM allergeni';
+    $stm = $pdo->prepare($sql);
+    $stm->execute();
+    $numAllergeni = $stm->rowCount();
+
+    if ($numAllergeni == 0) {
+        $msgErrore = 'Nessun allergene trovato.';
+    } else {
+        $allergeni = $stm->fetchAll(PDO::FETCH_ASSOC); 
+        
+        $msgErrore = 'nessun errore';
+    }
+} catch (PDOException $e) {
+    $msgErrore = $e->getMessage();
 }
+
+//caratteristiche
+try {
+    $sql = 'SELECT * FROM caratteristiche';
+    $stm = $pdo->prepare($sql);
+    $stm->execute();
+    $numCaratteristiche = $stm->rowCount();
+
+    if ($numCaratteristiche == 0) {
+        $msgErrore = 'Nessuna caratteristica trovata.';
+    } else {
+        $caratteristiche = $stm->fetchAll(PDO::FETCH_ASSOC); 
+        
+        $msgErrore = 'nessun errore';
+    }
+} catch (PDOException $e) {
+    $msgErrore = $e->getMessage();
+}
+
 
 //prodotti
 try {
-    $params = [':categoria' => $pag_numero];
+    $parametri = [':categoria' => $pag_numero];
 
-    $sql = 'SELECT * FROM prodotti p
-        WHERE p.id_categoria = :categoria AND p.disponibile = true';
+    $sql = "
+        SELECT 
+            p.id_prodotto,
+            p.nome,
+            p.descrizione,
+            p.prezzo,
+            p.immagine,
+
+            GROUP_CONCAT(DISTINCT a.nome SEPARATOR ', ') AS allergeni,
+            GROUP_CONCAT(DISTINCT c.nome SEPARATOR ', ') AS caratteristiche
+
+        FROM prodotti p
+
+        LEFT JOIN prodotti_allergeni pa 
+            ON p.id_prodotto = pa.id_prodotto
+        LEFT JOIN allergeni a 
+            ON pa.id_allergene = a.id_allergene
+
+        LEFT JOIN prodotti_caratteristiche pc 
+            ON p.id_prodotto = pc.id_prodotto
+        LEFT JOIN caratteristiche c 
+            ON pc.id_caratteristica = c.id_caratteristica
+
+        WHERE p.id_categoria = :categoria
+        AND p.disponibile = TRUE
+        ";
 
     //filtro allergeni
     if (!empty($_GET['no_allergeni'])) {
@@ -49,7 +107,7 @@ try {
         foreach ($_GET['no_allergeni'] as $i => $id) {
             $key = ":allergene$i";
             $placeholders[] = $key;
-            $params[$key] = $id;
+            $parametri[$key] = $id;
         }
 
         $sql .= "
@@ -58,9 +116,6 @@ try {
             FROM prodotti_allergeni pa
             WHERE pa.id_allergene IN (" . implode(',', $placeholders) . ")
         )";
-        // echo $sql;
-        // echo $_GET['no_allergeni'];
-        // var_dump($_GET);
     }
     //filtro caratteristiche
     if (!empty($_GET['caratteristiche'])) {
@@ -69,7 +124,7 @@ try {
         foreach ($_GET['caratteristiche'] as $i => $id) {
             $key = ":car$i";
             $placeholders[] = $key;
-            $params[$key] = $id;
+            $parametri[$key] = $id;
         }
 
         $sql .= "
@@ -79,10 +134,10 @@ try {
             WHERE pc.id_caratteristica IN (" . implode(',', $placeholders) . ")
         )";
     }
-
+    $sql .= " GROUP BY p.id_prodotto";
     
     $stm = $pdo->prepare($sql);
-    $stm->execute($params);
+    $stm->execute($parametri);
     $numProdotti = $stm->rowCount();
 
     if ($numProdotti == 0) {
@@ -94,6 +149,7 @@ try {
 } catch (PDOException $e) {
     $msgErrore = $e->getMessage();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -156,51 +212,71 @@ try {
         </div>
     <?php endif ?>
 
+    <!-- filtri -->
     <div>
         <form method="get" class="w3-container w3-padding w3-light-grey">
 
             <input type="hidden" name="pag" value="<?= $pag_numero ?>">
 
             <h4>Filtra per allergeni (escludi)</h4>
-            <label><input type="checkbox" name="no_allergeni[]" value="1"> Glutine</label>
-            <label><input type="checkbox" name="no_allergeni[]" value="2"> Lattosio</label>
+            <?php foreach($allergeni as $k => $a): ?>
+                <label><input type="checkbox" name="no_allergeni[]" value="<?php echo $a["id_allergene"]; ?>"
+                <?php if (!empty($_GET['no_allergeni']) && in_array($a["id_allergene"], $_GET['no_allergeni'])) echo 'checked'; ?>> 
+                <?php echo $a["nome"]; ?> </label>
+            <?php endforeach ?>
 
             <h4>Filtra per caratteristiche</h4>
-            <label><input type="checkbox" name="caratteristiche[]" value="1"> Vegano</label>
-            <label><input type="checkbox" name="caratteristiche[]" value="2"> Vegetariano</label>
+            <?php foreach($caratteristiche as $k => $c): ?>
+                <label><input type="checkbox" name="caratteristiche[]" value="<?php echo $c["id_caratteristica"]; ?>" 
+                <?php if (!empty($_GET['caratteristiche']) && in_array($c["id_caratteristica"], $_GET['caratteristiche'])) echo 'checked'; ?>> 
+                <?php echo $c["nome"]; ?> </label>
+            <?php endforeach ?>
+
+                
+            
 
             <br><br>
             <button class="w3-button w3-green">Applica filtri</button>
+            <a href="?pag=<?= $pag_numero ?>" class="w3-button w3-grey"> Rimuovi filtri </a>
         </form>
     </div>
 
-    <!-- Table -->
+
     <?php if ($numProdotti > 0): ?>
-        <div class="w3-responsive">
-            <table class="w3-table-all w3-hoverable w3-card-4">
-                <thead>
-                    <tr class="w3-teal">
-                        <th><i class="fa fa-hashtag"></i> ID</th>
-                        <th><i class="fa fa-align-left"></i> Nome</th>
-                        <th><i class="fa fa-map-marker"></i> Descrizione</th>
-                        <th><i class="fa fa-euro"></i> Prezzo</th>
-                        <th><i class="fa fa-img"></i> Immagine</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($prodotti as $p): ?>
-                        <tr>
-                            <td><?= $p["id_prodotto"] ?></td>
-                            <td><?= htmlspecialchars($p["nome"]) ?></td>
-                            <td><?= htmlspecialchars($p["descrizione"]) ?></td>
-                            <td>€ <?= number_format($p["prezzo"], 2, ',', '.') ?></td>
-                            <td><?= htmlspecialchars($p["immagine"]) ?></td>
-                        </tr>
-                    <?php endforeach ?>
-                </tbody>
-            </table>
+<div class="mobile-cards w3-padding">
+
+    <?php foreach ($prodotti as $p): ?>
+        <div class="w3-card w3-white w3-padding w3-margin-bottom">
+
+            <h4 class="w3-text-teal">
+                <?= htmlspecialchars($p['nome']) ?>
+            </h4>
+
+            <p><?= htmlspecialchars($p['descrizione']) ?></p>
+
+            <p class="w3-large">
+                <strong>€ <?= number_format($p['prezzo'], 2, ',', '.') ?></strong>
+            </p>
+
+            <?php if (!empty($p['allergeni'])): ?>
+                <p>
+                    <span class="w3-tag w3-red">Allergeni</span><br>
+                    <?= htmlspecialchars($p['allergeni']) ?>
+                </p>
+            <?php endif; ?>
+
+            <?php if (!empty($p['caratteristiche'])): ?>
+                <p>
+                    <span class="w3-tag w3-green">Caratteristiche</span><br>
+                    <?= htmlspecialchars($p['caratteristiche']) ?>
+                </p>
+            <?php endif; ?>
+
         </div>
-    <?php endif ?>
+    <?php endforeach; ?>
+
+</div>
+<?php endif; ?>
 
     </div>
 
@@ -210,7 +286,7 @@ try {
 
     <!-- Footer -->
     <footer class="w3-container w3-teal w3-padding-16 w3-margin-top footer">
-        <p class="w3-center">© 2025 Gestione Opere d'Arte</p>
+        <p class="w3-center">© 2026 Menu - Pizzeria da Paggi</p>
     </footer>
 
 </body>
