@@ -1,10 +1,7 @@
 <?php
 // require 'connessione.php';
 
-$pag_numero = 0;
-$pag_voci = 15;
-$pag_offset = 0;
-$pag_totali = 0;
+
 // $msgErrore = 'nessun errore';
 
 // // Filtri dai get
@@ -46,21 +43,12 @@ $pag_totali = 0;
 //     $ris = $stmTotal->fetchAll(PDO::FETCH_NUM);
 //     $num_record = $ris[0][0];
 
-//     $pag_totali = intdiv($num_record, $pag_voci);
-//     if (($num_record / $pag_voci) - intdiv($num_record, $pag_voci) > 0)
-//         $pag_totali++;
+//     
 // } catch (PDOException $e) {
 //     $msgErrore = $e->getMessage();
 // }
 
-// // Visualizzo la pagina scelta dall'utente.
-// if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0) {
-//     $pag_numero = intval($_GET['pag']);
-//     if ($pag_numero > $pag_totali)
-//         $pag_numero = $pag_totali;
-//     $pag_numero -= 1;
-//     $pag_offset = $pag_numero * $pag_voci;
-// }
+
 
 // // Lettura dati dal db.
 // try {
@@ -93,55 +81,38 @@ require 'connessione.php';
 
 $pdo = new PDO($connString, $connUser, $connPass);
 
-//categorie
-try {
-    $sql = 'SELECT * FROM categorie WHERE visibile = true ORDER BY ordine';
+$pag_numero = 0;
+$pag_voci = 15; 
+$pag_offset = 0;
+$pag_totali = 0;
+$num_record = 0;
+
+$msgErrore = [];
+
+//suddivisione pagine
+try{
+    $sql = "SELECT COUNT(*) FROM prodotti";
+
     $stm = $pdo->prepare($sql);
     $stm->execute();
-    $numCategorie = $stm->rowCount();
- 
-    if ($numCategorie == 0) {
-        $msgErrore = 'Nessuna categoria trovata.';
-    } else {
-        $categorie = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
-    }
+    $ris = $stm->fetchAll(PDO::FETCH_NUM);
+    $num_record = $ris[0][0];
+    
 } catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
+    $msgErrore["record"] = $e->getMessage();
 }
 
-//allergeni
-try {
-    $sql = 'SELECT * FROM allergeni';
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $numAllergeni = $stm->rowCount();
- 
-    if ($numAllergeni == 0) {
-        $msgErrore = 'Nessun allergene trovato.';
-    } else {
-        $allergeni = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
-    }
-} catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
-}
+$pag_totali = intdiv($num_record, $pag_voci);
+if (($num_record / $pag_voci) - intdiv($num_record, $pag_voci) > 0)
+    $pag_totali++;
 
-//caratteristiche
-try {
-    $sql = 'SELECT * FROM caratteristiche';
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $numCaratteristiche = $stm->rowCount();
- 
-    if ($numCaratteristiche == 0) {
-        $msgErrore = 'Nessuna caratteristica trovata.';
-    } else {
-        $caratteristiche = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
-    }
-} catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
+// Visualizzo la pagina scelta dall'utente.
+if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0) {
+    $pag_numero = intval($_GET['pag']);
+    if ($pag_numero > $pag_totali)
+        $pag_numero = $pag_totali;
+    $pag_numero -= 1;
+    $pag_offset = $pag_numero * $pag_voci;
 }
 
 //prodotti
@@ -198,22 +169,30 @@ try {
             WHERE pc.id_caratteristica IN (" . implode(',', $placeholders) . ")
         )";
     }
-    $sql .= " GROUP BY p.id_prodotto";
+    $sql .= " GROUP BY p.id_prodotto 
+        LIMIT :voci OFFSET :offset";
    
     $stm = $pdo->prepare($sql);
-    $stm->execute($parametri);
+    
+    foreach ($parametri as $k => $v) { $stm->bindValue($k, $v, PDO::PARAM_INT); }   
+    $stm->bindValue(':voci', (int)$pag_voci, PDO::PARAM_INT);
+    $stm->bindValue(':offset', (int)$pag_offset, PDO::PARAM_INT);
+
+    $stm->execute();
     $numProdotti = $stm->rowCount();
  
     if ($numProdotti == 0) {
-        $msgErrore = 'Nessun prodotto trovato.';
+        $msgErrore["prodotti"] = 'Nessun prodotto trovato.';
         $prodotti = [];
     } else {
         $prodotti = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
     }
+
 } catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
+    $msgErrore["prodotti"] = $e->getMessage();
 }
+
+
 ?>
 
 <!DOCTYPE html>
@@ -241,12 +220,15 @@ try {
     </div>
 
     <!-- Banner per l'errore -->
-    <?php if ($msgErrore != 'nessun errore'): ?>
+    <?php if (!empty($msgErrore)): ?>
         <div class="w3-panel w3-red w3-display-container">
             <span onclick="this.parentElement.style.display='none'" 
                   class="w3-button w3-red w3-large w3-display-topright">&times;</span>
             <h3>Errore!</h3>
-            <p><?= $msgErrore ?></p>
+            
+            <?php foreach($msgErrore as $query => $err ): ?>
+                <p><?php echo $query .' - '. $err; ?></p>
+            <?php endforeach ?>
         </div>
     <?php else: ?>
 
@@ -280,8 +262,8 @@ try {
         <!-- Info Card -->
         <div class="w3-panel w3-blue w3-card-4">
             <p>
-                <?php if ($numProdotti > 0): ?>
-                    <i class="fa fa-info-circle"></i> Nell'archivio sono presenti <strong><?= $numProdotti ?></strong> prodotti.
+                <?php if ($num_record > 0): ?>
+                    <i class="fa fa-info-circle"></i> Nell'archivio sono presenti <strong><?= $num_record ?></strong> prodotti.
                 <?php else: ?>
                     <i class="fa fa-exclamation-triangle"></i> Non ci sono prodotti memorizzat in archivio
                 <?php endif ?>
@@ -321,9 +303,9 @@ try {
                     <thead>
                         <tr class="w3-teal">
                             <th><i class="fa fa-hashtag"></i> ID</th>
-                            <th><i class="fa fa-align-left"></i> Descrizione</th>
-                            <th><i class="fa fa-map-marker"></i> Provincia</th>
-                            <th><i class="fa fa-calendar"></i> Data di Vendita</th>
+                            <th><i class="fa fa-align-left"></i> Nome</th>
+                            <th><i class="fa fa-map-marker"></i> Descrizione</th>
+                            <th><i class="fa fa-calendar"></i> Immagine</th>
                             <th><i class="fa fa-euro"></i> Prezzo</th>
                             <th><i class="fa fa-euro"></i> caratteristiche</th>
                             <th><i class="fa fa-euro"></i> allergeni</th>
@@ -358,7 +340,7 @@ try {
 
     <!-- Footer -->
     <footer class="w3-container w3-teal w3-padding-16 w3-margin-top footer">
-        <p class="w3-center">© 2025 Gestione Opere d'Arte</p>
+        <p class="w3-center">© 2026 Gestore menu Pizzeria da Paggi</p>
     </footer>
 
 </body>

@@ -69,20 +69,24 @@ try {
 try {
     $parametri = [':categoria' => $pag_numero];
  
-    $sql = "
-        SELECT
+    $sql = "SELECT
             p.id_prodotto,
             p.nome,
             p.descrizione,
             p.prezzo,
             p.immagine,
+
             GROUP_CONCAT(DISTINCT a.nome SEPARATOR ', ') AS allergeni,
             GROUP_CONCAT(DISTINCT c.nome SEPARATOR ', ') AS caratteristiche
+
         FROM prodotti p
+
         LEFT JOIN prodotti_allergeni pa ON p.id_prodotto = pa.id_prodotto
         LEFT JOIN allergeni a ON pa.id_allergene = a.id_allergene
+
         LEFT JOIN prodotti_caratteristiche pc ON p.id_prodotto = pc.id_prodotto
         LEFT JOIN caratteristiche c ON pc.id_caratteristica = c.id_caratteristica
+        
         WHERE p.id_categoria = :categoria
         AND p.disponibile = TRUE
         ";
@@ -137,7 +141,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pizzeria Da Paggi | Il Nostro Menu</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;600&display=swap%22>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@300;400;600&display=swap%22">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <style>
         :root { --primary-color: #e67e22; --dark-bg: #1a1a1a; }
