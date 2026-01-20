@@ -3,66 +3,23 @@ require 'connessione.php';
 $pdo = new PDO($connString, $connUser, $connPass);
  
 $pag_numero = 0;
-$msgErrore = 'nessun errore';
+$msgErrore = [];
  
-// Lettura dati dal db.
-//categorie
+// dati base
 try {
-    $sql = 'SELECT * FROM categorie WHERE visibile = true ORDER BY ordine';
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $numCategorie = $stm->rowCount();
- 
-    if ($numCategorie == 0) {
-        $msgErrore = 'Nessuna categoria trovata.';
-    } else {
-        $categorie = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
-    }
+    $categorie = $pdo->query("SELECT * FROM categorie WHERE visibile = true ORDER BY ordine")->fetchAll(PDO::FETCH_ASSOC);
+    $allergeni = $pdo->query("SELECT * FROM allergeni")->fetchAll(PDO::FETCH_ASSOC);
+    $caratteristiche = $pdo->query("SELECT * FROM caratteristiche")->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
+    $msgErrore["lettura"] = $e->getMessage();
 }
- 
+
 // Visualizzo la pagina scelta dall'utente.
-if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0 && intval($_GET['pag']) <= $numCategorie) {
+if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0 && intval($_GET['pag']) <= count($categorie)) {
     $pag_numero = intval($_GET['pag']);
 }
-if ($pag_numero === 0 && $numCategorie > 0) {
+if ($pag_numero === 0 && count($categorie) > 0) {
     $pag_numero = $categorie[0]['id_categoria'];
-}
- 
-//allergeni
-try {
-    $sql = 'SELECT * FROM allergeni';
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $numAllergeni = $stm->rowCount();
- 
-    if ($numAllergeni == 0) {
-        $msgErrore = 'Nessun allergene trovato.';
-    } else {
-        $allergeni = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
-    }
-} catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
-}
- 
-//caratteristiche
-try {
-    $sql = 'SELECT * FROM caratteristiche';
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $numCaratteristiche = $stm->rowCount();
- 
-    if ($numCaratteristiche == 0) {
-        $msgErrore = 'Nessuna caratteristica trovata.';
-    } else {
-        $caratteristiche = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
-    }
-} catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
 }
  
 //prodotti
@@ -86,7 +43,7 @@ try {
 
         LEFT JOIN prodotti_caratteristiche pc ON p.id_prodotto = pc.id_prodotto
         LEFT JOIN caratteristiche c ON pc.id_caratteristica = c.id_caratteristica
-        
+
         WHERE p.id_categoria = :categoria
         AND p.disponibile = TRUE
         ";
@@ -123,14 +80,13 @@ try {
     $numProdotti = $stm->rowCount();
  
     if ($numProdotti == 0) {
-        $msgErrore = 'Nessun prodotto trovato.';
+        $msgErrore["prodotti"] = 'Nessun prodotto trovato.';
         $prodotti = [];
     } else {
         $prodotti = $stm->fetchAll(PDO::FETCH_ASSOC);
-        $msgErrore = 'nessun errore';
     }
 } catch (PDOException $e) {
-    $msgErrore = $e->getMessage();
+    $msgErrore["prodotti"] = $e->getMessage();
 }
 ?>
  
@@ -177,9 +133,12 @@ try {
  
     <main class="max-w-6xl mx-auto px-4 -mt-10">
        
-        <?php if ($msgErrore != 'nessun errore' && $numProdotti == 0): ?>
+        <?php if (!empty($msgErrore)): ?>
             <div class="bg-red-500 text-white p-4 rounded-lg mb-8 shadow-lg text-center">
-                <i class="fa fa-exclamation-triangle mr-2"></i> <?= $msgErrore ?>
+                <i class="fa fa-exclamation-triangle mr-2"></i> 
+                <?php foreach ($msgErrore as $query => $err): ?>
+                    <p><?= $query . ' - ' . $err; ?></p>
+                <?php endforeach; ?>
             </div>
         <?php endif; ?>
  
