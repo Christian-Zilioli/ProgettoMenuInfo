@@ -9,6 +9,7 @@ $pag_offset = 0;
 $pag_totali = 0;
 $num_record = 0;
 
+$parametri = [];
 $msgErrore = [];
 
 //suddivisione pagine
@@ -38,9 +39,21 @@ if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_
 }
 //allergeni
 try {
-    $sql = 'SELECT * FROM allergeni';
+    $sql = 'SELECT * FROM allergeni WHERE 1=1';
+
+    // filtro nome
+    if (isset($_GET['nome']) && $_GET['nome'] !== '') {
+        $sql .= " AND nome LIKE :nome";
+        $parametri[':nome'] = '%' . $_GET['nome'] . '%';
+    }
+    $sql .= " LIMIT :voci OFFSET :offset";
     $stm = $pdo->prepare($sql);
-    $stm->execute();
+
+    foreach ($parametri as $k => $v) { $stm->bindValue($k, $v); }   
+    $stm->bindValue(':voci', (int)$pag_voci, PDO::PARAM_INT);
+    $stm->bindValue(':offset', (int)$pag_offset, PDO::PARAM_INT);
+
+    $stm->execute();;
     $numAllergeni = $stm->rowCount();
  
     if ($numAllergeni == 0) {
@@ -87,7 +100,55 @@ try {
                 <p><?php echo $query .' - '. $err; ?></p>
             <?php endforeach ?>
         </div>
-    <?php else: ?>
+    <?php endif ?>
+
+    <!-- Form filtri -->
+    <div class="w3-container w3-padding-32">
+        <form method="GET" class="w3-margin-bottom">
+
+            <div class="w3-row-padding">
+
+                <div class="w3-third">
+                    <input
+                        class="w3-input w3-border w3-round"
+                        type="text"
+                        name="nome"
+                        placeholder="Filtra per nome"
+                        value="<?= $_GET['nome'] ?? '' ?>">
+                </div>
+            </div>
+
+            <button class="w3-button w3-teal w3-round w3-margin-top" type="submit">
+                <i class="fa fa-filter"></i> Applica Filtri
+            </button>
+
+        </form>
+    </div>
+
+    <!-- Navigazione pagine gestore -->
+    <?php $pagina = basename($_SERVER['PHP_SELF']); ?>
+    <div class="w3-bar w3-light-grey w3-card w3-margin-bottom">
+        <a href="index.php"
+        class="w3-bar-item w3-button <?= $pagina == 'index.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-pizza-slice"></i> Prodotti
+        </a>
+
+        <a href="categorie.php"
+        class="w3-bar-item w3-button <?= $pagina == 'categorie.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-list"></i> Categorie
+        </a>
+
+        <a href="allergeni.php"
+        class="w3-bar-item w3-button <?= $pagina == 'allergeni.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-exclamation-triangle"></i> Allergeni
+        </a>
+
+        <a href="caratteristiche.php"
+        class="w3-bar-item w3-button <?= $pagina == 'caratteristiche.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-leaf"></i> Caratteristiche
+        </a>
+
+    </div>
 
         <!-- Info Card -->
         <div class="w3-panel w3-blue w3-card-4">
@@ -154,7 +215,6 @@ try {
 
     </div>
 
-    <?php endif ?>
 
     </div>
 

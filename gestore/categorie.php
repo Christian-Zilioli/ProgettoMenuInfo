@@ -9,11 +9,12 @@ $pag_offset = 0;
 $pag_totali = 0;
 $num_record = 0;
 
+$parametri = [];
 $msgErrore = [];
 
 //suddivisione pagine
 try{
-    $sql = "SELECT COUNT(*) FROM categorie WHERE visibile = true";
+    $sql = "SELECT COUNT(*) FROM categorie";
 
     $stm = $pdo->prepare($sql);
     $stm->execute();
@@ -38,10 +39,30 @@ if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_
 }
 //categorie
 try {
-    $sql = 'SELECT * FROM categorie WHERE visibile = true ORDER BY ordine';
+    $sql = 'SELECT * FROM categorie WHERE 1=1';
+
+    // filtro nome
+    if (isset($_GET['nome']) && $_GET['nome'] !== '') {
+        $sql .= " AND nome LIKE :nome";
+        $parametri[':nome'] = '%' . $_GET['nome'] . '%';
+    }
+    // filtro disponibilità
+    if (isset($_GET['visibile']) && $_GET['visibile'] !== '') {
+        $sql .= " AND visibile = :vis";
+        $parametri[':vis'] = $_GET['visibile'];
+    }
+    $sql .= " ORDER BY ordine
+            LIMIT :voci OFFSET :offset";
     $stm = $pdo->prepare($sql);
+
+    foreach ($parametri as $k => $v) { $stm->bindValue($k, $v); }   
+    $stm->bindValue(':voci', (int)$pag_voci, PDO::PARAM_INT);
+    $stm->bindValue(':offset', (int)$pag_offset, PDO::PARAM_INT);
+
     $stm->execute();
     $numCategorie = $stm->rowCount();
+
+
  
     if ($numCategorie == 0) {
         $msgErrore["categorie"] = 'Nessuna categoria trovata.';
@@ -87,76 +108,150 @@ try {
                 <p><?php echo $query .' - '. $err; ?></p>
             <?php endforeach ?>
         </div>
-    <?php else: ?>
+    <?php endif ?>
 
-        <!-- Info Card -->
-        <div class="w3-panel w3-blue w3-card-4">
-            <p>
-                <?php if ($num_record > 0): ?>
-                    <i class="fa fa-info-circle"></i> Nell'archivio sono presenti <strong><?= $num_record ?></strong> categorie.
-                <?php else: ?>
-                    <i class="fa fa-exclamation-triangle"></i> Non ci sono categorie memorizzate in archivio
-                <?php endif ?>
-            </p>
-        </div>
+        <!-- Form filtri -->
+    <div class="w3-container w3-padding-32">
+        <form method="GET" class="w3-margin-bottom">
 
-        <!-- Visualizzazione bottoni scorrimento pagine -->
-        <?php if ($pag_totali > 1): ?>
-            <div class="w3-bar w3-small w3-center">
-                <!-- Bottone Precedente -->
-                <?php if ($pag_numero > 0): ?>
-                    <a href="?pag=<?= $pag_numero ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">← Prec</a>
-                <?php else: ?>
-                    <div class="w3-button w3-disabled">← Prec</div>
-                <?php endif ?>
+            <div class="w3-row-padding">
 
-                <!-- Numeri pagine (max 10) -->
-                <?php for ($i = 1; $i <= min($pag_totali, 10); $i++): ?>
-                    <a href="?pag=<?= $i ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button <?php if ($i == $pag_numero + 1) echo 'w3-red'; ?>">
-                        <?= $i ?>
-                    </a>
-                <?php endfor ?>
-
-                <!-- Bottone Successivo -->
-                <?php if ($pag_numero < $pag_totali - 1): ?>
-                    <a href="?pag=<?= $pag_numero + 2 ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">Succ →</a>
-                <?php else: ?>
-                    <div class="w3-button w3-disabled">Succ →</div>
-                <?php endif ?>
+                <div class="w3-third">
+                    <input
+                        class="w3-input w3-border w3-round"
+                        type="text"
+                        name="nome"
+                        placeholder="Filtra per nome"
+                        value="<?= $_GET['nome'] ?? '' ?>">
+                </div>
             </div>
-        <?php endif ?>
 
-        <!-- Table -->
-        <?php if ($numCategorie > 0): ?>
-            <div class="w3-responsive">
-                <table class="w3-table-all w3-hoverable w3-card-4">
-                    <thead>
-                        <tr class="w3-teal">
-                            <th><i class="fa fa-hashtag"></i> ID</th>
-                            <th><i class="fa fa-align-left"></i> Nome</th>
-                            <th><i class="fa fa-sort"></i> Ordine</th>
-                            <th><i class="fa fa-trash"></i></th>
-                            <th><i class="fa fa-edit"></i></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($categorie as $cat): ?>
-                            <tr>
-                                <td><?= $cat["id_categoria"] ?></td>
-                                <td><?= htmlspecialchars($cat["nome"]) ?></td>
-                                <td><?= $cat["ordine"] ?></td>
-                                <td><a href="confermaElimina.php?id=<?= $cat["id_categoria"] ?>"><i class="fa fa-trash w3-text-red"></i></a></td>
-                                <td><a href="confermaModifica.php?id=<?= $cat["id_categoria"] ?>"><i class="fa fa-edit w3-text-blue"></i></a></td>
-                            </tr>
-                        <?php endforeach ?>
-                    </tbody>
-                </table>
+            <div class="w3-row-padding w3-margin-top">
+                <div class="w3-third">
+                    <select class="w3-select w3-border" name="visibile">
+                        <option value="">Visibilità</option>
+                        <option value="1" <?= ($_GET['visibile'] ?? '') === '1' ? 'selected' : ''; ?>>
+                            Visibili
+                        </option>
+                        <option value="0" <?= ($_GET['visibile'] ?? '') === '0' ? 'selected' : ''; ?>>
+                            Nascosti
+                        </option>
+                    </select>
+                </div>
             </div>
-        <?php endif ?>
+
+            <button class="w3-button w3-teal w3-round w3-margin-top" type="submit">
+                <i class="fa fa-filter"></i> Applica Filtri
+            </button>
+
+        </form>
+    </div>
+
+    <!-- Navigazione pagine gestore -->
+    <?php $pagina = basename($_SERVER['PHP_SELF']); ?>
+    <div class="w3-bar w3-light-grey w3-card w3-margin-bottom">
+        <a href="index.php"
+        class="w3-bar-item w3-button <?= $pagina == 'index.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-pizza-slice"></i> Prodotti
+        </a>
+
+        <a href="categorie.php"
+        class="w3-bar-item w3-button <?= $pagina == 'categorie.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-list"></i> Categorie
+        </a>
+
+        <a href="allergeni.php"
+        class="w3-bar-item w3-button <?= $pagina == 'allergeni.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-exclamation-triangle"></i> Allergeni
+        </a>
+
+        <a href="caratteristiche.php"
+        class="w3-bar-item w3-button <?= $pagina == 'caratteristiche.php' ? 'w3-green' : '' ?>">
+            <i class="fa fa-leaf"></i> Caratteristiche
+        </a>
 
     </div>
 
+    <!-- Info Card -->
+    <div class="w3-panel w3-blue w3-card-4">
+        <p>
+            <?php if ($num_record > 0): ?>
+                <i class="fa fa-info-circle"></i> Nell'archivio sono presenti <strong><?= $num_record ?></strong> categorie.
+            <?php else: ?>
+                <i class="fa fa-exclamation-triangle"></i> Non ci sono categorie memorizzate in archivio
+            <?php endif ?>
+        </p>
+    </div>
+
+    <!-- Visualizzazione bottoni scorrimento pagine -->
+    <?php if ($pag_totali > 1): ?>
+        <div class="w3-bar w3-small w3-center">
+            <!-- Bottone Precedente -->
+            <?php if ($pag_numero > 0): ?>
+                <a href="?pag=<?= $pag_numero ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">← Prec</a>
+            <?php else: ?>
+                <div class="w3-button w3-disabled">← Prec</div>
+            <?php endif ?>
+
+            <!-- Numeri pagine (max 10) -->
+            <?php for ($i = 1; $i <= min($pag_totali, 10); $i++): ?>
+                <a href="?pag=<?= $i ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button <?php if ($i == $pag_numero + 1) echo 'w3-red'; ?>">
+                    <?= $i ?>
+                </a>
+            <?php endfor ?>
+
+            <!-- Bottone Successivo -->
+            <?php if ($pag_numero < $pag_totali - 1): ?>
+                <a href="?pag=<?= $pag_numero + 2 ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">Succ →</a>
+            <?php else: ?>
+                <div class="w3-button w3-disabled">Succ →</div>
+            <?php endif ?>
+        </div>
     <?php endif ?>
+
+    <!-- Table -->
+    <?php if ($numCategorie > 0): ?>
+        <div class="w3-responsive">
+            <table class="w3-table-all w3-hoverable w3-card-4">
+                <thead>
+                    <tr class="w3-teal">
+                        <th><i class="fa fa-hashtag"></i> ID</th>
+                        <th><i class="fa fa-align-left"></i> Nome</th>
+                        <th><i class="fa fa-sort"></i> Ordine</th>
+                        <th>Disponibile</th>
+                        <th><i class="fa fa-trash"></i></th>
+                        <th><i class="fa fa-edit"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($categorie as $cat): ?>
+                        <tr>
+                            <td><?= $cat["id_categoria"] ?></td>
+                            <td><?= htmlspecialchars($cat["nome"]) ?></td>
+                            <td><?= $cat["ordine"] ?></td>
+                            <td>
+                                <?php if ($cat['visibile']): ?>
+                                    <span class="w3-text-green" style="text-decoration: underline;">
+                                        VISIBILE
+                                    </span>
+                                <?php else: ?>
+                                    <span class="w3-text-red" style="text-decoration: underline;">
+                                        NASCOSTO
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td><a href="confermaElimina.php?id=<?= $cat["id_categoria"] ?>"><i class="fa fa-trash w3-text-red"></i></a></td>
+                            <td><a href="confermaModifica.php?id=<?= $cat["id_categoria"] ?>"><i class="fa fa-edit w3-text-blue"></i></a></td>
+                        </tr>
+                    <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif ?>
+
+    </div>
+
+    
 
     </div>
 

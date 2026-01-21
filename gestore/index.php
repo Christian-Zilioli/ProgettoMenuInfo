@@ -5,7 +5,7 @@ require 'connessione.php';
 $pdo = new PDO($connString, $connUser, $connPass);
 
 $pag_numero = 0;
-$pag_voci = 15; 
+$pag_voci = 15000; //da fixare
 $pag_offset = 0;
 $pag_totali = 0;
 $num_record = 0;
@@ -305,9 +305,7 @@ try {
 
     <!-- Navigazione pagine gestore -->
     <?php $pagina = basename($_SERVER['PHP_SELF']); ?>
-
     <div class="w3-bar w3-light-grey w3-card w3-margin-bottom">
-
         <a href="index.php"
         class="w3-bar-item w3-button <?= $pagina == 'index.php' ? 'w3-green' : '' ?>">
             <i class="fa fa-pizza-slice"></i> Prodotti
@@ -328,6 +326,18 @@ try {
             <i class="fa fa-leaf"></i> Caratteristiche
         </a>
 
+    </div>
+
+    <!-- Messaggio numero prodotti -->
+    <div class="w3-panel w3-blue w3-card-4">
+        <p>
+            <?php if ($num_record > 0): ?>
+                <i class="fa fa-info-circle"></i> Nell'archivio sono presenti <strong><?= $num_record ?></strong> prodotti.
+            <?php else: ?>
+                <i class="fa fa-exclamation-triangle"></i> Non ci sono categorie memorizzate in archivio
+            <?php endif ?>
+        </p>
+    
     </div>
 
     <!-- Tabella prodotti -->
