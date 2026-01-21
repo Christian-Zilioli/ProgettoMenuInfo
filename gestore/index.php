@@ -1,18 +1,16 @@
 <?php
-//lettura dati db
 require 'connessione.php';
 
 $pdo = new PDO($connString, $connUser, $connPass);
 
 $pag_numero = 0;
-$pag_voci = 15000; //da fixare
+$pag_voci = 15;
 $pag_offset = 0;
 $pag_totali = 0;
 $num_record = 0;
-
 $msgErrore = [];
 
-// dati base
+//dati db
 try {
     $categorie = $pdo->query("SELECT * FROM categorie ORDER BY ordine")->fetchAll(PDO::FETCH_ASSOC);
     $allergeni = $pdo->query("SELECT * FROM allergeni")->fetchAll(PDO::FETCH_ASSOC);
@@ -21,123 +19,118 @@ try {
     $msgErrore["lettura"] = $e->getMessage();
 }
 
-//suddivisione pagine
-try{
-    $sql = "SELECT COUNT(*) FROM prodotti";
+// filtri
+$parametri = [];
+$sqlWhere = " WHERE 1=1"; 
 
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $ris = $stm->fetchAll(PDO::FETCH_NUM);
-    $num_record = $ris[0][0];
+if (isset($_GET['nome']) && $_GET['nome'] !== '') {
+    $sqlWhere .= " AND p.nome LIKE :nome";
+    $parametri[':nome'] = '%' . $_GET['nome'] . '%';
+}
+
+if (isset($_GET['prezzo_min']) && $_GET['prezzo_min'] !== '') {
+    $sqlWhere .= " AND p.prezzo >= :prezzo_min";
+    $parametri[':prezzo_min'] = $_GET['prezzo_min'];
+}
+
+if (isset($_GET['prezzo_max']) && $_GET['prezzo_max'] !== '') {
+    $sqlWhere .= " AND p.prezzo <= :prezzo_max";
+    $parametri[':prezzo_max'] = $_GET['prezzo_max'];
+}
+
+if (isset($_GET['disponibile']) && $_GET['disponibile'] !== '') {
+    $sqlWhere .= " AND p.disponibile = :disp";
+    $parametri[':disp'] = $_GET['disponibile'];
+}
+
+if (!empty($_GET['allergeni'])) {
+    $placeholders = [];
+    foreach ($_GET['allergeni'] as $i => $id) {
+        $key = ":allergene$i";
+        $placeholders[] = $key;
+        $parametri[$key] = $id;
+    }
+    $sqlWhere .= " AND p.id_prodotto IN (
+        SELECT pa.id_prodotto FROM prodotti_allergeni pa 
+        WHERE pa.id_allergene IN (" . implode(',', $placeholders) . ")
+    )";
+}
+
+if (!empty($_GET['caratteristiche'])) {
+    $placeholders = [];
+    foreach ($_GET['caratteristiche'] as $i => $id) {
+        $key = ":car$i";
+        $placeholders[] = $key;
+        $parametri[$key] = $id;
+    }
+    $sqlWhere .= " AND p.id_prodotto IN (
+        SELECT pc.id_prodotto FROM prodotti_caratteristiche pc 
+        WHERE pc.id_caratteristica IN (" . implode(',', $placeholders) . ")
+    )";
+}
+
+if (!empty($_GET['categorie'])) {
+    $placeholders = [];
+    foreach ($_GET['categorie'] as $i => $id) {
+        $key = ":cat$i";
+        $placeholders[] = $key;
+        $parametri[$key] = $id;
+    }
+    $sqlWhere .= " AND p.id_categoria IN (" . implode(',', $placeholders) . ")";
+}
+// suddivisione pagine
+try{
+    $sqlCount = "SELECT COUNT(*) FROM prodotti p " . $sqlWhere;
+
+    $stm = $pdo->prepare($sqlCount);
+    $stm->execute($parametri);
+    $num_record = $stm->fetchColumn(); 
     
 } catch (PDOException $e) {
     $msgErrore["record"] = $e->getMessage();
 }
-
 $pag_totali = intdiv($num_record, $pag_voci);
-if (($num_record / $pag_voci) - intdiv($num_record, $pag_voci) > 0)
+if (($num_record % $pag_voci) > 0)
     $pag_totali++;
 
-// Visualizzo la pagina scelta dall'utente.
-if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0) {
+// Calcolo offset
+if (isset($_GET['pag']) && is_numeric($_GET['pag']) && intval($_GET['pag']) > 0) {
     $pag_numero = intval($_GET['pag']);
-    if ($pag_numero > $pag_totali)
-        $pag_numero = $pag_totali;
-    $pag_numero -= 1;
-    $pag_offset = $pag_numero * $pag_voci;
+    
+    if ($pag_numero > $pag_totali) $pag_numero = $pag_totali;
+        
+    $pag_numero -= 1; 
+} else {
+    $pag_numero = 0;
 }
 
-//prodotti
-try {
-    $parametri = [];
- 
-    $sql = "SELECT
-            p.id_prodotto,
-            p.nome,
-            p.descrizione,
-            p.prezzo,
-            p.immagine,
-            p.disponibile,
-            cat.nome AS categoria,
+if ($pag_numero < 0) $pag_numero = 0; 
+$pag_offset = $pag_numero * $pag_voci;
 
+try {
+    $sql = "SELECT
+            p.id_prodotto, 
+            p.nome, 
+            p.descrizione, 
+            p.prezzo, 
+            p.immagine, 
+            p.disponibile, 
+            cat.nome AS categoria,
             GROUP_CONCAT(DISTINCT a.nome SEPARATOR ', ') AS allergeni,
             GROUP_CONCAT(DISTINCT c.nome SEPARATOR ', ') AS caratteristiche
 
         FROM prodotti p
-
         LEFT JOIN prodotti_allergeni pa ON p.id_prodotto = pa.id_prodotto
         LEFT JOIN allergeni a ON pa.id_allergene = a.id_allergene
 
         LEFT JOIN prodotti_caratteristiche pc ON p.id_prodotto = pc.id_prodotto
         LEFT JOIN caratteristiche c ON pc.id_caratteristica = c.id_caratteristica
 
-        LEFT JOIN categorie cat ON p.id_categoria = cat.id_categoria
+        LEFT JOIN categorie cat ON p.id_categoria = cat.id_categoria"
         
-        WHERE 1=1";
+        . $sqlWhere . 
 
-    // filtro nome
-    if (isset($_GET['nome']) && $_GET['nome'] !== '') {
-        $sql .= " AND p.nome LIKE :nome";
-        $parametri[':nome'] = '%' . $_GET['nome'] . '%';
-    }
-
-    // filtro prezzo minimo
-    if (isset($_GET['prezzo_min']) && $_GET['prezzo_min'] !== '') {
-        $sql .= " AND p.prezzo >= :prezzo_min";
-        $parametri[':prezzo_min'] = $_GET['prezzo_min'];
-    }
-
-    // filtro prezzo massimo
-    if (isset($_GET['prezzo_max']) && $_GET['prezzo_max'] !== '') {
-        $sql .= " AND p.prezzo <= :prezzo_max";
-        $parametri[':prezzo_max'] = $_GET['prezzo_max'];
-    }
-
-    // filtro disponibilità
-    if (isset($_GET['disponibile']) && $_GET['disponibile'] !== '') {
-        $sql .= " AND p.disponibile = :disp";
-        $parametri[':disp'] = $_GET['disponibile'];
-    }
- 
-    // filtro allergeni
-    if (!empty($_GET['allergeni'])) {
-        $placeholders = [];
-        foreach ($_GET['allergeni'] as $i => $id) {
-            $key = ":allergene$i";
-            $placeholders[] = $key;
-            $parametri[$key] = $id;
-        }
-        $sql .= " AND p.id_prodotto IN (
-            SELECT pa.id_prodotto FROM prodotti_allergeni pa 
-            WHERE pa.id_allergene IN (" . implode(',', $placeholders) . ")
-        )";
-    }
-    
-    //filtro caratteristiche
-    if (!empty($_GET['caratteristiche'])) {
-        $placeholders = [];
-        foreach ($_GET['caratteristiche'] as $i => $id) {
-            $key = ":car$i";
-            $placeholders[] = $key;
-            $parametri[$key] = $id;
-        }
-        $sql .= " AND p.id_prodotto IN (
-            SELECT pc.id_prodotto FROM prodotti_caratteristiche pc 
-            WHERE pc.id_caratteristica IN (" . implode(',', $placeholders) . ")
-        )";
-    }
-
-    //filtro categorie
-    if (!empty($_GET['categorie'])) {
-        $placeholders = [];
-        foreach ($_GET['categorie'] as $i => $id) {
-            $key = ":cat$i";
-            $placeholders[] = $key;
-            $parametri[$key] = $id;
-        }
-        $sql .= " AND p.id_categoria IN (" . implode(',', $placeholders) . ")";
-    }
-    $sql .= " GROUP BY p.id_prodotto 
+        " GROUP BY p.id_prodotto 
         LIMIT :voci OFFSET :offset";
    
     $stm = $pdo->prepare($sql);
@@ -181,10 +174,7 @@ try {
 
     <!-- Navbar -->
     <div class="w3-bar w3-light-grey">
-        <a href="." class="w3-bar-item w3-button w3-green">
-            <i class="fa fa-home"></i>
-        </a>
-        <a href="prodotto_form.php" class="w3-bar-item w3-button">
+        <a href="gestione_prodotto.php" class="w3-bar-item w3-button">
             <i class="fa fa-plus"></i> Inserisci
         </a>
     </div>
@@ -340,6 +330,32 @@ try {
     
     </div>
 
+        <!-- Visualizzazione bottoni scorrimento pagine -->
+    <?php if ($pag_totali > 1): ?>
+        <div class="w3-bar w3-small w3-center">
+            <!-- Bottone Precedente -->
+            <?php if ($pag_numero > 0): ?>
+                <a href="?pag=<?= $pag_numero ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">← Prec</a>
+            <?php else: ?>
+                <div class="w3-button w3-disabled">← Prec</div>
+            <?php endif ?>
+
+            <!-- Numeri pagine (max 10) -->
+            <?php for ($i = 1; $i <= min($pag_totali, 10); $i++): ?>
+                <a href="?pag=<?= $i ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button <?php if ($i == $pag_numero + 1) echo 'w3-red'; ?>">
+                    <?= $i ?>
+                </a>
+            <?php endfor ?>
+
+            <!-- Bottone Successivo -->
+            <?php if ($pag_numero < $pag_totali - 1): ?>
+                <a href="?pag=<?= $pag_numero + 2 ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">Succ →</a>
+            <?php else: ?>
+                <div class="w3-button w3-disabled">Succ →</div>
+            <?php endif ?>
+        </div>
+    <?php endif ?>
+
     <!-- Tabella prodotti -->
     <?php if ($numProdotti > 0): ?>
         <div class="w3-responsive">
@@ -382,12 +398,12 @@ try {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <a href="confermaElimina.php?id=<?= $p['id_prodotto']; ?>">
+                                <a href="elimina.php?id=<?= $p['id_prodotto']; ?>&tabella=prodotti">
                                     <i class="fa fa-trash w3-text-red"></i>
                                 </a>
                             </td>
                             <td>
-                                <a href="prodotto_form.php?id=<?= $p['id_prodotto']; ?>">
+                                <a href="gestione_prodotto.php?id=<?= $p['id_prodotto']; ?>">
                                     <i class="fa fa-edit w3-text-blue"></i>
                                 </a>
                             </td>

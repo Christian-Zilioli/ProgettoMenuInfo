@@ -1,6 +1,5 @@
 <?php
 require 'connessione.php';
-
 $pdo = new PDO($connString, $connUser, $connPass);
 
 $pag_numero = 0;
@@ -8,54 +7,40 @@ $pag_voci = 15;
 $pag_offset = 0;
 $pag_totali = 0;
 $num_record = 0;
-
 $parametri = [];
 $msgErrore = [];
 
-//suddivisione pagine
-try{
-    $sql = "SELECT COUNT(*) FROM allergeni";
+$sqlWhere = " WHERE 1=1";
+if (isset($_GET['nome']) && $_GET['nome'] !== '') {
+    $sqlWhere .= " AND nome LIKE :nome";
+    $parametri[':nome'] = '%' . $_GET['nome'] . '%';
+}
 
-    $stm = $pdo->prepare($sql);
-    $stm->execute();
-    $ris = $stm->fetchAll(PDO::FETCH_NUM);
-    $num_record = $ris[0][0];
-    
+try {
+    $sqlCount = "SELECT COUNT(*) FROM allergeni" . $sqlWhere;
+    $stm = $pdo->prepare($sqlCount);
+    $stm->execute($parametri);
+    $num_record = $stm->fetchColumn(); 
 } catch (PDOException $e) {
     $msgErrore["record"] = $e->getMessage();
 }
 
-$pag_totali = intdiv($num_record, $pag_voci);
-if (($num_record / $pag_voci) - intdiv($num_record, $pag_voci) > 0)
-    $pag_totali++;
-
-// Visualizzo la pagina scelta dall'utente.
-if (isset($_GET['pag']) == true && is_numeric($_GET['pag']) == true && intval($_GET['pag']) > 0) {
+$pag_totali = ceil($num_record / $pag_voci);
+if (isset($_GET['pag']) && is_numeric($_GET['pag']) && intval($_GET['pag']) > 0) {
     $pag_numero = intval($_GET['pag']);
-    if ($pag_numero > $pag_totali)
-        $pag_numero = $pag_totali;
+    if ($pag_numero > $pag_totali) $pag_numero = max(1, $pag_totali);
+    $pag_offset = ($pag_numero - 1) * $pag_voci;
     $pag_numero -= 1;
-    $pag_offset = $pag_numero * $pag_voci;
 }
-//allergeni
+
 try {
-    $sql = 'SELECT * FROM allergeni WHERE 1=1';
-
-    // filtro nome
-    if (isset($_GET['nome']) && $_GET['nome'] !== '') {
-        $sql .= " AND nome LIKE :nome";
-        $parametri[':nome'] = '%' . $_GET['nome'] . '%';
-    }
-    $sql .= " LIMIT :voci OFFSET :offset";
+    $sql = "SELECT * FROM allergeni" . $sqlWhere . " LIMIT :voci OFFSET :offset";
     $stm = $pdo->prepare($sql);
-
     foreach ($parametri as $k => $v) { $stm->bindValue($k, $v); }   
     $stm->bindValue(':voci', (int)$pag_voci, PDO::PARAM_INT);
     $stm->bindValue(':offset', (int)$pag_offset, PDO::PARAM_INT);
-
-    $stm->execute();;
+    $stm->execute();
     $numAllergeni = $stm->rowCount();
- 
     if ($numAllergeni == 0) {
         $msgErrore["allergeni"] = 'Nessun allergene trovato.';
     } else {
@@ -85,8 +70,7 @@ try {
     </div>
 
     <div class="w3-bar w3-light-grey">
-        <a href="." class="w3-bar-item w3-button w3-green"><i class="fa fa-home"></i></a>
-        <a href="inserisci.php" class="w3-bar-item w3-button"><i class="fa fa-plus"></i> Inserisci</a>
+        <a href="gestione_allergeni.php" class="w3-bar-item w3-button"><i class="fa fa-plus"></i> Inserisci</a>
     </div>
 
     <!-- Banner per l'errore -->
@@ -204,8 +188,8 @@ try {
                             <tr>
                                 <td><?= $a["id_allergene"] ?></td>
                                 <td><?= htmlspecialchars($a["nome"]) ?></td>
-                                <td><a href="confermaElimina.php?id=<?= $a["id_allergene"] ?>"><i class="fa fa-trash w3-text-red"></i></a></td>
-                                <td><a href="confermaModifica.php?id=<?= $a["id_allergene"] ?>"><i class="fa fa-edit w3-text-blue"></i></a></td>
+                                <td><a href="elimina.php?id=<?= $a["id_allergene"] ?>&tabella=allergeni"><i class="fa fa-trash w3-text-red"></i></a></td>
+                                <td><a href="gestione_allergeni.php?id=<?= $a["id_allergene"] ?>"><i class="fa fa-edit w3-text-blue"></i></a></td>
                             </tr>
                         <?php endforeach ?>
                     </tbody>

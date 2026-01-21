@@ -1,41 +1,6 @@
-
-2) salvare lo stato dei filtri quando carichi la pagina nuova, manca quando cambi categoria
-
-3)sito admin
-
-4)grafica
-
-5)documentazione
-
-6)codice qr
-
-6)*- fixare i botoni di scorrimento nei prodotti
-
-<!-- Visualizzazione bottoni scorrimento pagine -->
-<div class="w3-bar w3-small w3-center">
-    <?php if ($pag_totali > 1): ?>
-        <!-- Bottone Precedente -->
-        <?php if ($pag_numero > 0): ?>
-            <a href="?pag=<?= $pag_numero ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">← Prec</a>
-        <?php else: ?>
-            <div class="w3-button w3-disabled">← Prec</div>
-        <?php endif ?>
-
-        <!-- Numeri pagine (max 10) -->
-        <?php for ($i = 1; $i <= min($pag_totali, 10); $i++): ?>
-            <a href="?pag=<?= $i ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button <?php if ($i == $pag_numero + 1) echo 'w3-red'; ?>">
-                <?= $i ?>
-            </a>
-        <?php endfor ?>
-
-        <!-- Bottone Successivo -->
-        <?php if ($pag_numero < $pag_totali - 1): ?>
-            <a href="?pag=<?= $pag_numero + 2 ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">Succ →</a>
-        <?php else: ?>
-            <div class="w3-button w3-disabled">Succ →</div>
-        <?php endif ?>
-    <?php endif ?>
-
-</div>
-
-la navigazione non funziona in nessuno, è da fixare
+- cod qr !!!!
+- scambio pos nelle categorie !
+- togliere immagini !!
+- grafica !
+- controlli delle formd !!!
+- documentazione !!!!
