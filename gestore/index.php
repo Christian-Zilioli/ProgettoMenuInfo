@@ -150,8 +150,9 @@ try {
 } catch (PDOException $e) {
     $msgErrore["prodotti"] = $e->getMessage();
 }
-?>
 
+
+?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -160,265 +161,289 @@ try {
     <title>Gestione menu Pizzeria da Paggi</title>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body {
+            background-color: #f7f3ee;
+            color: #333;
+        }
+        .bg-pizza {
+            background-color: #b22222 !important;
+            color: white;
+        }
+        .bg-basil {
+            background-color: #2e7d32 !important;
+            color: white;
+        }
+        .bg-cream {
+            background-color: #fffaf2;
+        }
+        .text-pizza {
+            color: #b22222;
+        }
+        .w3-button.bg-basil:hover {
+            background-color: #1b5e20 !important;
+        }
+    </style>
 </head>
 
 <body>
 
-    <!-- Banner -->
-    <div class="w3-container w3-light-blue w3-xlarge">
-        <p>
-            <i class="fa fa-paint-brush"></i>
+    <div class="w3-container bg-pizza w3-padding-16">
+        <h2 class="w3-xlarge w3-margin-0">
+            <i class="fa fa-pizza-slice"></i>
             Gestione menu Pizzeria da Paggi
-        </p>
+        </h2>
     </div>
 
-    <!-- Navbar -->
-    <div class="w3-bar w3-light-grey">
-        <a href="gestione_prodotto.php" class="w3-bar-item w3-button">
-            <i class="fa fa-plus"></i> Inserisci
-        </a>
-    </div>
-
-    <!-- Banner errore -->
-    <?php if (!empty($msgErrore)): ?>
-        <div class="w3-panel w3-red w3-display-container">
-            <span
-                onclick="this.parentElement.style.display='none'"
-                class="w3-button w3-red w3-large w3-display-topright">
-                &times;
-            </span>
-
-            <h3>Errore!</h3>
-
-            <?php foreach ($msgErrore as $query => $err): ?>
-                <p><?= $query . ' - ' . $err; ?></p>
-            <?php endforeach; ?>
-        </div>
-
-    <?php endif; ?>
-
-    <!-- Form filtri -->
-    <div class="w3-container w3-padding-32">
-        <form method="GET" class="w3-margin-bottom">
-
-            <div class="w3-row-padding">
-
-                <div class="w3-third">
-                    <input
-                        class="w3-input w3-border w3-round"
-                        type="text"
-                        name="nome"
-                        placeholder="Filtra per nome prodotto"
-                        value="<?= $_GET['nome'] ?? '' ?>">
-                </div>
-
-                <div class="w3-third">
-                    <input
-                        class="w3-input w3-border w3-round"
-                        type="number"
-                        step="0.01"
-                        name="prezzo_min"
-                        placeholder="Prezzo minimo"
-                        value="<?= $_GET['prezzo_min'] ?? '' ?>">
-                </div>
-
-                <div class="w3-third">
-                    <input
-                        class="w3-input w3-border w3-round"
-                        type="number"
-                        step="0.01"
-                        name="prezzo_max"
-                        placeholder="Prezzo massimo"
-                        value="<?= $_GET['prezzo_max'] ?? '' ?>">
-                </div>
-
-            </div>
-
-            <div class="w3-row-padding w3-margin-top">
-                <h4>Filtra per allergeni</h4>
-                <?php foreach ($allergeni as $a): ?>
-                    <label>
-                        <input
-                            type="checkbox"
-                            name="allergeni[]"
-                            value="<?= $a['id_allergene']; ?>"
-                            <?= (!empty($_GET['allergeni']) && in_array($a['id_allergene'], $_GET['allergeni'])) ? 'checked' : ''; ?>>
-                        <?= $a['nome']; ?>
-                    </label>
-                <?php endforeach; ?>
-
-                <h4>Filtra per caratteristiche</h4>
-                <?php foreach ($caratteristiche as $c): ?>
-                    <label>
-                        <input
-                            type="checkbox"
-                            name="caratteristiche[]"
-                            value="<?= $c['id_caratteristica']; ?>"
-                            <?= (!empty($_GET['caratteristiche']) && in_array($c['id_caratteristica'], $_GET['caratteristiche'])) ? 'checked' : ''; ?>>
-                        <?= $c['nome']; ?>
-                    </label>
-                <?php endforeach; ?>
-
-                <h4>Filtra per categoria</h4>
-                <?php foreach ($categorie as $c): ?>
-                    <label>
-                        <input
-                            type="checkbox"
-                            name="categorie[]"
-                            value="<?= $c['id_categoria']; ?>"
-                            <?= (!empty($_GET['categorie']) && in_array($c['id_categoria'], $_GET['categorie'])) ? 'checked' : ''; ?>>
-                        <?= $c['nome']; ?>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-
-            <div class="w3-row-padding w3-margin-top">
-                <div class="w3-third">
-                    <select class="w3-select w3-border" name="disponibile">
-                        <option value="">Disponibilità</option>
-                        <option value="1" <?= ($_GET['disponibile'] ?? '') === '1' ? 'selected' : ''; ?>>
-                            Disponibili
-                        </option>
-                        <option value="0" <?= ($_GET['disponibile'] ?? '') === '0' ? 'selected' : ''; ?>>
-                            Non disponibili
-                        </option>
-                    </select>
-                </div>
-            </div>
-
-            <button class="w3-button w3-teal w3-round w3-margin-top" type="submit">
-                <i class="fa fa-filter"></i> Applica Filtri
-            </button>
-
-        </form>
-    </div>
-
-    <!-- Navigazione pagine gestore -->
+    <!-- navigazione pagine gestore -->
     <?php $pagina = basename($_SERVER['PHP_SELF']); ?>
-    <div class="w3-bar w3-light-grey w3-card w3-margin-bottom">
+    <div class="w3-bar w3-white w3-card w3-margin-bottom">
         <a href="index.php"
-        class="w3-bar-item w3-button <?= $pagina == 'index.php' ? 'w3-green' : '' ?>">
-            <i class="fa fa-pizza-slice"></i> Prodotti
+        class="w3-bar-item w3-button w3-padding-16 <?= $pagina == 'index.php' ? 'w3-border-bottom w3-border-red text-pizza' : '' ?>">
+            <i class="fa fa-home"></i> Prodotti
         </a>
 
         <a href="categorie.php"
-        class="w3-bar-item w3-button <?= $pagina == 'categorie.php' ? 'w3-green' : '' ?>">
+        class="w3-bar-item w3-button w3-padding-16 <?= $pagina == 'categorie.php' ? 'w3-border-bottom w3-border-red text-pizza' : '' ?>">
             <i class="fa fa-list"></i> Categorie
         </a>
 
         <a href="allergeni.php"
-        class="w3-bar-item w3-button <?= $pagina == 'allergeni.php' ? 'w3-green' : '' ?>">
+        class="w3-bar-item w3-button w3-padding-16 <?= $pagina == 'allergeni.php' ? 'w3-border-bottom w3-border-red text-pizza' : '' ?>">
             <i class="fa fa-exclamation-triangle"></i> Allergeni
         </a>
 
         <a href="caratteristiche.php"
-        class="w3-bar-item w3-button <?= $pagina == 'caratteristiche.php' ? 'w3-green' : '' ?>">
+        class="w3-bar-item w3-button w3-padding-16 <?= $pagina == 'caratteristiche.php' ? 'w3-border-bottom w3-border-red text-pizza' : '' ?>">
             <i class="fa fa-leaf"></i> Caratteristiche
         </a>
 
-    </div>
-
-    <!-- Messaggio numero prodotti -->
-    <div class="w3-panel w3-blue w3-card-4">
-        <p>
-            <?php if ($num_record > 0): ?>
-                <i class="fa fa-info-circle"></i> Nell'archivio sono presenti <strong><?= $num_record ?></strong> prodotti.
-            <?php else: ?>
-                <i class="fa fa-exclamation-triangle"></i> Non ci sono categorie memorizzate in archivio
-            <?php endif ?>
-        </p>
-    
-    </div>
-
-        <!-- Visualizzazione bottoni scorrimento pagine -->
-    <?php if ($pag_totali > 1): ?>
-        <div class="w3-bar w3-small w3-center">
-            <!-- Bottone Precedente -->
-            <?php if ($pag_numero > 0): ?>
-                <a href="?pag=<?= $pag_numero ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">← Prec</a>
-            <?php else: ?>
-                <div class="w3-button w3-disabled">← Prec</div>
-            <?php endif ?>
-
-            <!-- Numeri pagine (max 10) -->
-            <?php for ($i = 1; $i <= min($pag_totali, 10); $i++): ?>
-                <a href="?pag=<?= $i ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button <?php if ($i == $pag_numero + 1) echo 'w3-red'; ?>">
-                    <?= $i ?>
-                </a>
-            <?php endfor ?>
-
-            <!-- Bottone Successivo -->
-            <?php if ($pag_numero < $pag_totali - 1): ?>
-                <a href="?pag=<?= $pag_numero + 2 ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">Succ →</a>
-            <?php else: ?>
-                <div class="w3-button w3-disabled">Succ →</div>
-            <?php endif ?>
+        <div class="w3-right    bg-cream w3-card">
+            <a href="gestione_prodotto.php" class="w3-bar-item w3-button w3-padding-16">
+                <i class="fa fa-plus"></i> Inserisci
+            </a>
+            <a href="qr.php" class="w3-bar-item w3-button bg-basil w3-padding-16">
+                <i class="fa fa-qrcode"></i> QR Tavoli
+            </a>
         </div>
-    <?php endif ?>
+    </div>
 
-    <!-- Tabella prodotti -->
-    <?php if ($numProdotti > 0): ?>
-        <div class="w3-responsive">
-            <table class="w3-table-all w3-hoverable w3-card-4">
-                <thead>
-                    <tr class="w3-teal">
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Descrizione</th>
-                        <th>Immagine</th>
-                        <th>Prezzo</th>
-                        <th>Caratteristiche</th>
-                        <th>Allergeni</th>
-                        <th>Categoria</th>
-                        <th>Disponibile</th>
-                        <th></th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($prodotti as $p): ?>
-                        <tr>
-                            <td><?= $p['id_prodotto']; ?></td>
-                            <td><?= htmlspecialchars($p['nome']); ?></td>
-                            <td><?= htmlspecialchars($p['descrizione']); ?></td>
-                            <td><?= htmlspecialchars($p['immagine']); ?></td>
-                            <td>€ <?= number_format($p['prezzo'], 2, ',', '.'); ?></td>
-                            <td><?= htmlspecialchars($p['caratteristiche']); ?></td>
-                            <td><?= htmlspecialchars($p['allergeni']); ?></td>
-                            <td><?= htmlspecialchars($p['categoria']); ?></td>
-                            <td>
-                                <?php if ($p['disponibile']): ?>
-                                    <span class="w3-text-green" style="text-decoration: underline;">
-                                        DISPONIBILE
-                                    </span>
-                                <?php else: ?>
-                                    <span class="w3-text-red" style="text-decoration: underline;">
-                                        NON DISPONIBILE
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <a href="elimina.php?id=<?= $p['id_prodotto']; ?>&tabella=prodotti">
-                                    <i class="fa fa-trash w3-text-red"></i>
-                                </a>
-                            </td>
-                            <td>
-                                <a href="gestione_prodotto.php?id=<?= $p['id_prodotto']; ?>">
-                                    <i class="fa fa-edit w3-text-blue"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    <!-- banner errore -->
+    <?php if (!empty($msgErrore)): ?>
+        <div class="w3-container">
+            <div class="w3-panel w3-red w3-display-container w3-round">
+                <span
+                    onclick="this.parentElement.style.display='none'"
+                    class="w3-button w3-red w3-large w3-display-topright">
+                    &times;
+                </span>
+
+                <h3>Errore!</h3>
+
+                <?php foreach ($msgErrore as $query => $err): ?>
+                    <p><?= $query . ' - ' . $err; ?></p>
+                <?php endforeach; ?>
+            </div>
         </div>
     <?php endif; ?>
 
-    
+    <!-- filtri -->
+    <div class="w3-content" style="max-width:1200px">
 
-    <!-- Footer -->
-    <footer class="w3-container w3-teal w3-padding-16 w3-margin-top">
-        <p class="w3-center">© 2026 Gestore menu Pizzeria da Paggi</p>
+        <div class="w3-container w3-padding-16 bg-cream w3-card w3-round-large w3-margin">
+            <form method="GET">
+                <h4 class="text-pizza w3-border-bottom w3-padding-16"><i class="fa fa-search"></i> Filtra Ricerca</h4>
+                <div class="w3-row-padding">
+                    <div class="w3-third">
+                        <label>Nome</label>
+                        <input
+                            class="w3-input w3-border w3-round"
+                            type="text"
+                            name="nome"
+                            placeholder="Prodotto..."
+                            value="<?= $_GET['nome'] ?? '' ?>">
+                    </div>
+
+                    <div class="w3-third">
+                        <label>Prezzo Min</label>
+                        <input
+                            class="w3-input w3-border w3-round"
+                            type="number"
+                            step="0.01"
+                            name="prezzo_min"
+                            value="<?= $_GET['prezzo_min'] ?? '' ?>">
+                    </div>
+
+                    <div class="w3-third">
+                        <label>Prezzo Max</label>
+                        <input
+                            class="w3-input w3-border w3-round"
+                            type="number"
+                            step="0.01"
+                            name="prezzo_max"
+                            value="<?= $_GET['prezzo_max'] ?? '' ?>">
+                    </div>
+                </div>
+
+                <div class="w3-row-padding w3-margin-top">
+                    <div class="w3-third">
+                        <h5>Allergeni</h5>
+                        <div class="w3-white w3-padding w3-border w3-round" style="max-height:100px; overflow-y:auto">
+                            <?php foreach ($allergeni as $a): ?>
+                                <label class="w3-show-block">
+                                    <input
+                                        type="checkbox"
+                                        name="allergeni[]"
+                                        value="<?= $a['id_allergene']; ?>"
+                                        <?= (!empty($_GET['allergeni']) && in_array($a['id_allergene'], $_GET['allergeni'])) ? 'checked' : ''; ?>>
+                                    <?= $a['nome']; ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <div class="w3-third">
+                        <h5>Caratteristiche</h5>
+                        <div class="w3-white w3-padding w3-border w3-round" style="max-height:100px; overflow-y:auto">
+                            <?php foreach ($caratteristiche as $c): ?>
+                                <label class="w3-show-block">
+                                    <input
+                                        type="checkbox"
+                                        name="caratteristiche[]"
+                                        value="<?= $c['id_caratteristica']; ?>"
+                                        <?= (!empty($_GET['caratteristiche']) && in_array($c['id_caratteristica'], $_GET['caratteristiche'])) ? 'checked' : ''; ?>>
+                                    <?= $c['nome']; ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <div class="w3-third">
+                        <h5>Categorie</h5>
+                        <div class="w3-white w3-padding w3-border w3-round" style="max-height:100px; overflow-y:auto">
+                            <?php foreach ($categorie as $c): ?>
+                                <label class="w3-show-block">
+                                    <input
+                                        type="checkbox"
+                                        name="categorie[]"
+                                        value="<?= $c['id_categoria']; ?>"
+                                        <?= (!empty($_GET['categorie']) && in_array($c['id_categoria'], $_GET['categorie'])) ? 'checked' : ''; ?>>
+                                    <?= $c['nome']; ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w3-row-padding w3-margin-top">
+                    <div class="w3-third">
+                        <select class="w3-select w3-border w3-round" name="disponibile">
+                            <option value="">Tutte le disponibilità</option>
+                            <option value="1" <?= ($_GET['disponibile'] ?? '') === '1' ? 'selected' : ''; ?>>Disponibili</option>
+                            <option value="0" <?= ($_GET['disponibile'] ?? '') === '0' ? 'selected' : ''; ?>>Non disponibili</option>
+                        </select>
+                    </div>
+                    <div class="w3-twothird w3-right-align">
+                         <button class="w3-button bg-basil w3-round" type="submit">
+                            <i class="fa fa-filter"></i> Applica Filtri
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="w3-container">
+            <div class="w3-panel w3-white w3-card w3-border-left w3-border-red">
+                <p>
+                    <?php if ($num_record > 0): ?>
+                        <i class="fa fa-info-circle text-pizza"></i> Nell'archivio sono presenti <strong><?= $num_record ?></strong> prodotti.
+                    <?php else: ?>
+                        <i class="fa fa-exclamation-triangle w3-text-red"></i> Non ci sono prodotti corrispondenti
+                    <?php endif ?>
+                </p>
+            </div>
+        </div>
+
+        <!-- scorrimento pagine -->
+        <?php if ($pag_totali > 1): ?>
+            <div class="w3-center w3-padding">
+                <div class="w3-bar w3-border w3-white w3-round">
+                    <?php if ($pag_numero > 0): ?>
+                        <a href="?pag=<?= $pag_numero ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">←</a>
+                    <?php endif ?>
+
+                    <?php for ($i = 1; $i <= min($pag_totali, 10); $i++): ?>
+                        <a href="?pag=<?= $i ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button <?php if ($i == $pag_numero + 1) echo 'bg-pizza'; ?>">
+                            <?= $i ?>
+                        </a>
+                    <?php endfor ?>
+
+                    <?php if ($pag_numero < $pag_totali - 1): ?>
+                        <a href="?pag=<?= $pag_numero + 2 ?><?php foreach($_GET as $k=>$v){if($k!='pag') echo '&'.urlencode($k).'='.urlencode($v);} ?>" class="w3-button">→</a>
+                    <?php endif ?>
+                </div>
+            </div>
+        <?php endif ?>
+
+        <?php if ($numProdotti > 0): ?>
+            <div class="w3-container w3-margin-bottom">
+                <div class="w3-responsive w3-card-4">
+                    <table class="w3-table-all w3-hoverable">
+                        <thead>
+                            <tr class="bg-pizza">
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Descrizione</th>
+                                <th>Immagine</th>
+                                <th>Prezzo</th>
+                                <th>Caratteristiche</th>
+                                <th>Allergeni</th>
+                                <th>Categoria</th>
+                                <th>Disponibile</th>
+                                <th colspan="2" class="w3-center">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($prodotti as $p): ?>
+                                <tr>
+                                    <td><?= $p['id_prodotto']; ?></td>
+                                    <td><strong><?= htmlspecialchars($p['nome']); ?></strong></td>
+                                    <td><small><?= htmlspecialchars($p['descrizione']); ?></small></td>
+                                    <td><small><?= htmlspecialchars($p['immagine']); ?></small></td>
+                                    <td class="text-pizza"><strong>€ <?= number_format($p['prezzo'], 2, ',', '.'); ?></strong></td>
+                                    <td><small><?= htmlspecialchars($p['caratteristiche']); ?></small></td>
+                                    <td><small><?= htmlspecialchars($p['allergeni']); ?></small></td>
+                                    <td><span class="w3-tag w3-light-grey w3-border w3-round"><?= htmlspecialchars($p['categoria']); ?></span></td>
+                                    <td>
+                                        <?php if ($p['disponibile']): ?>
+                                            <span class="w3-text-green w3-bold">SI</span>
+                                        <?php else: ?>
+                                            <span class="w3-text-red w3-bold">NO</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="w3-center">
+                                        <a href="gestione_prodotto.php?id=<?= $p['id_prodotto']; ?>" title="Modifica">
+                                            <i class="fa fa-edit w3-text-blue"></i>
+                                        </a>
+                                    </td>
+                                    <td class="w3-center">
+                                        <a href="elimina.php?id=<?= $p['id_prodotto']; ?>&tabella=prodotti">
+                                            <i class="fa fa-trash w3-text-red"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <?php endif; ?>
+
+    </div>
+
+    <footer class="w3-container bg-pizza w3-padding-32 w3-margin-top">
+        <p class="w3-center w3-margin-0">© 2026 Gestore menu Pizzeria da Paggi</p>
+        <p class="w3-center w3-small w3-opacity w3-margin-0">Qualità e tradizione sulla tua tavola</p>
     </footer>
 
 </body>

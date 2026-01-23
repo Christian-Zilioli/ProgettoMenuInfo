@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Gestione dell'immagine: se non ne viene caricata una nuova, tengo quella vecchia
     $img = $prodotto['immagine']; 
     if (isset($_FILES['immagine']) && $_FILES['immagine']['error'] === 0) {
-        $img = time() . "_" . $_FILES['immagine']['name']; // Rinomino per evitare duplicati
+        $img = time() . "_" . $_FILES['immagine']['name'];
         move_uploaded_file($_FILES['immagine']['tmp_name'], "uploads/" . $img);
     }
 
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->commit();
         header("Location: index.php");
     } catch (Exception $e) {
-        // In caso di errore, annullo tutto ciò che è stato fatto dall'inizio della transazione
+        // In caso di errore, annullo tutto ciò che è stato fatto dalla prima query
         $pdo->rollBack();
         $msgErrore = $e->getMessage();
     }
@@ -108,66 +108,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <title><?= $id ? 'Modifica' : 'Nuovo' ?> Prodotto</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title><?= $id ? 'Modifica' : 'Nuovo' ?> Prodotto | Pizzeria da Paggi</title>
+    <style>
+        body {
+            background-color: #f7f3ee;
+            color: #333;
+        }
+        .bg-pizza {
+            background-color: #b22222 !important;
+            color: white;
+        }
+        .bg-basil {
+            background-color: #2e7d32 !important;
+            color: white;
+        }
+        .bg-cream {
+            background-color: #fffaf2;
+        }
+        .text-pizza {
+            color: #b22222;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
-<body class="w3-light-grey">
-    <div class="w3-container w3-teal"><h2><?= $id ? 'Modifica Prodotto' : 'Aggiungi Prodotto' ?></h2></div>
-    
-    <form method="POST" enctype="multipart/form-data" class="w3-container w3-white w3-margin w3-padding w3-card-4">
-        <label>Nome</label>
-        <input class="w3-input w3-border" type="text" name="nome" value="<?= htmlspecialchars($prodotto['nome']) ?>" required>
-        
-        <label>Descrizione</label>
-        <textarea class="w3-input w3-border" name="descrizione"><?= htmlspecialchars($prodotto['descrizione']) ?></textarea>
+<body>
 
-        <div class="w3-row-section">
-            <div class="w3-half w3-padding-small">
-                <label>Prezzo (€)</label>
-                <input class="w3-input w3-border" type="number" step="0.01" name="prezzo" value="<?= $prodotto['prezzo'] ?>" required>
+    <div class="w3-container bg-pizza w3-padding-16">
+        <h2 class="w3-xlarge w3-margin-0">
+            <i class="fa <?= $id ? 'fa-edit' : 'fa-plus' ?>"></i>
+            <?= $id ? 'Modifica Prodotto' : 'Aggiungi Nuovo Prodotto' ?>
+        </h2>
+    </div>
+
+    <div class="w3-container form-container">
+        <form method="POST" enctype="multipart/form-data" class="w3-container bg-cream w3-padding-24 w3-card-4 w3-round-large">
+            
+            <div class="input-group">
+                <label class="text-pizza"><b>Nome Prodotto</b></label>
+                <input class="w3-input w3-border w3-round" type="text" name="nome" value="<?= htmlspecialchars($prodotto['nome']) ?>" required placeholder="Es: Margherita">
             </div>
-            <div class="w3-half w3-padding-small">
-                <label>Categoria</label>
-                <select class="w3-select w3-border" name="id_categoria">
-                    <option value="">Nessuna</option>
-                    <?php foreach($categorie as $c): ?>
-                        <option value="<?= $c['id_categoria'] ?>" <?= $c['id_categoria'] == $prodotto['id_categoria'] ? 'selected' : '' ?>><?= $c['nome'] ?></option>
-                    <?php endforeach; ?>
-                </select>
+            
+            <div class="input-group">
+                <label class="text-pizza"><b>Descrizione</b></label>
+                <textarea class="w3-input w3-border w3-round" name="descrizione" rows="3" placeholder="Ingredienti e dettagli..."><?= htmlspecialchars($prodotto['descrizione']) ?></textarea>
             </div>
-        </div>
 
-        <div class="w3-margin-top">
-            <label>Immagine</label>
-            <input type="file" name="immagine" class="w3-input">
-            <?php if($prodotto['immagine']): ?><p><small>Attuale: <?= $prodotto['immagine'] ?></small></p><?php endif; ?>
-        </div>
-
-        <div class="w3-margin-top">
-            <input class="w3-check" type="checkbox" name="disponibile" <?= $prodotto['disponibile'] ? 'checked' : '' ?>>
-            <label>Disponibile</label>
-        </div>
-
-        <hr>
-        <div class="w3-row">
-            <div class="w3-half">
-                <h4>Allergeni</h4>
-                <?php foreach($tutti_allergeni as $a): ?>
-                    <input type="checkbox" name="allergeni[]" value="<?= $a['id_allergene'] ?>" <?= in_array($a['id_allergene'], $selAllergeni) ? 'checked' : '' ?>> <?= $a['nome'] ?><br>
-                <?php endforeach; ?>
+            <div class="w3-row-padding" style="margin:0 -16px">
+                <div class="w3-half input-group">
+                    <label class="text-pizza"><b>Prezzo (€)</b></label>
+                    <input class="w3-input w3-border w3-round" type="number" step="0.01" name="prezzo" value="<?= $prodotto['prezzo'] ?>" required>
+                </div>
+                <div class="w3-half input-group">
+                    <label class="text-pizza"><b>Categoria</b></label>
+                    <select class="w3-select w3-border w3-round" name="id_categoria">
+                        <option value="">Nessuna categoria</option>
+                        <?php foreach($categorie as $c): ?>
+                            <option value="<?= $c['id_categoria'] ?>" <?= $c['id_categoria'] == $prodotto['id_categoria'] ? 'selected' : '' ?>><?= $c['nome'] ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
-            <div class="w3-half">
-                <h4>Caratteristiche</h4>
-                <?php foreach($tutte_caratteristiche as $c): ?>
-                    <input type="checkbox" name="caratteristiche[]" value="<?= $c['id_caratteristica'] ?>" <?= in_array($c['id_caratteristica'], $selCaratteristiche) ? 'checked' : '' ?>> <?= $c['nome'] ?><br>
-                <?php endforeach; ?>
-            </div>
-        </div>
 
-        <div class="w3-margin-top">
-            <button type="submit" class="w3-button w3-teal">Salva Prodotto</button>
-            <a href="index.php" class="w3-button w3-red">Annulla</a>
-        </div>
-    </form>
+            <div class="w3-row-padding w3-margin-top" style="margin:0 -16px">
+                <div class="w3-half input-group">
+                    <label class="text-pizza"><b>Immagine Prodotto</b></label>
+                    <input type="file" name="immagine" class="w3-input w3-border w3-round w3-white">
+                    <?php if($prodotto['immagine']): ?>
+                        <p class="w3-small w3-text-grey">Attuale: <span class="w3-tag w3-light-grey"><?= $prodotto['immagine'] ?></span></p>
+                    <?php endif; ?>
+                </div>
+                <div class="w3-half w3-padding-large">
+                    <div class="w3-padding-top">
+                        <input class="w3-check" type="checkbox" name="disponibile" <?= $prodotto['disponibile'] ? 'checked' : '' ?>>
+                        <label><b>Disponibile nel Menù</b></label>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="border-top: 1px solid #ddd">
+
+            <div class="w3-row-padding">
+                <div class="w3-half">
+                    <h4 class="text-pizza"><i class="fa fa-exclamation-triangle"></i> Allergeni</h4>
+                    <div class="w3-white w3-padding w3-border w3-round" style="max-height: 150px; overflow-y: auto;">
+                        <?php foreach($tutti_allergeni as $a): ?>
+                            <label class="w3-show-block">
+                                <input class="w3-check" type="checkbox" name="allergeni[]" value="<?= $a['id_allergene'] ?>" <?= in_array($a['id_allergene'], $selAllergeni) ? 'checked' : '' ?>> <?= $a['nome'] ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="w3-half">
+                    <h4 class="text-pizza"><i class="fa fa-leaf"></i> Caratteristiche</h4>
+                    <div class="w3-white w3-padding w3-border w3-round" style="max-height: 150px; overflow-y: auto;">
+                        <?php foreach($tutte_caratteristiche as $c): ?>
+                            <label class="w3-show-block">
+                                <input class="w3-check" type="checkbox" name="caratteristiche[]" value="<?= $c['id_caratteristica'] ?>" <?= in_array($c['id_caratteristica'], $selCaratteristiche) ? 'checked' : '' ?>> <?= $c['nome'] ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w3-margin-top w3-padding-top w3-center">
+                <hr>
+                <a href="index.php" class="w3-button w3-white w3-border w3-round-large" style="width: 150px;">Annulla</a>
+                <button type="submit" class="w3-button bg-basil w3-round-large" style="width: 150px;">
+                    <i class="fa fa-save"></i> Salva
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <footer class="w3-container w3-center w3-padding-32 w3-opacity w3-small">
+        © 2026 Pizzeria da Paggi - Sistema di Gestione
+    </footer>
+
 </body>
 </html>
