@@ -176,21 +176,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <!-- <div class="w3-row-padding w3-margin-top" style="margin:0 -16px">
-                <div class="w3-half input-group">
+            <div class="w3-row-padding w3-margin-top" style="margin:0 -16px">
+                <!-- <div class="w3-half input-group">
                     <label class="text-pizza"><b>Immagine Prodotto</b></label>
                     <input type="file" name="immagine" class="w3-input w3-border w3-round w3-white">
                     <?php if($prodotto['immagine']): ?>
                         <p class="w3-small w3-text-grey">Attuale: <span class="w3-tag w3-light-grey"><?= $prodotto['immagine'] ?></span></p>
                     <?php endif; ?>
-                </div>
+                </div> -->
                 <div class="w3-half w3-padding-large">
                     <div class="w3-padding-top">
                         <input class="w3-check" type="checkbox" name="disponibile" <?= $prodotto['disponibile'] ? 'checked' : '' ?>>
                         <label><b>Disponibile nel Menù</b></label>
                     </div>
                 </div>
-            </div> -->
+            </div>
 
             <hr style="border-top: 1px solid #ddd">
 
