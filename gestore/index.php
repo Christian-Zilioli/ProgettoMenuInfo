@@ -394,7 +394,7 @@ try {
                                 <th>ID</th>
                                 <th>Nome</th>
                                 <th>Descrizione</th>
-                                <th>Immagine</th>
+                                <!-- <th>Immagine</th> -->
                                 <th>Prezzo</th>
                                 <th>Caratteristiche</th>
                                 <th>Allergeni</th>
@@ -409,7 +409,7 @@ try {
                                     <td><?= $p['id_prodotto']; ?></td>
                                     <td><strong><?= htmlspecialchars($p['nome']); ?></strong></td>
                                     <td><small><?= htmlspecialchars($p['descrizione']); ?></small></td>
-                                    <td><small><?= htmlspecialchars($p['immagine']); ?></small></td>
+                                    <!-- <td><small><?= htmlspecialchars($p['immagine']); ?></small></td> -->
                                     <td class="text-pizza"><strong>€ <?= number_format($p['prezzo'], 2, ',', '.'); ?></strong></td>
                                     <td><small><?= htmlspecialchars($p['caratteristiche']); ?></small></td>
                                     <td><small><?= htmlspecialchars($p['allergeni']); ?></small></td>

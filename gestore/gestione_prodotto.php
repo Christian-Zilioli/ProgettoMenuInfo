@@ -39,12 +39,11 @@ if ($id) {
 //salvataggio
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Gestione dell'immagine: se non ne viene caricata una nuova, tengo quella vecchia
     $img = $prodotto['immagine']; 
-    if (isset($_FILES['immagine']) && $_FILES['immagine']['error'] === 0) {
-        $img = time() . "_" . $_FILES['immagine']['name'];
-        move_uploaded_file($_FILES['immagine']['tmp_name'], "uploads/" . $img);
-    }
+    // if (isset($_FILES['immagine']) && $_FILES['immagine']['error'] === 0) {
+    //     $img = time() . "_" . $_FILES['immagine']['name'];
+    //     move_uploaded_file($_FILES['immagine']['tmp_name'], "uploads/" . $img);
+    // }
 
     try {
         $pdo->beginTransaction();
@@ -55,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':p' => $_POST['prezzo'],
             ':disp' => isset($_POST['disponibile']) ? 1 : 0,
             ':img' => $img,
-            ':cat' => $_POST['id_categoria'] ?: null // Se vuoto, salva come NULL
+            ':cat' => $_POST['id_categoria'] ?: null
         ];
 
         if ($id) {
@@ -98,7 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->commit();
         header("Location: index.php");
     } catch (Exception $e) {
-        // In caso di errore, annullo tutto ciò che è stato fatto dalla prima query
         $pdo->rollBack();
         $msgErrore = $e->getMessage();
     }
@@ -178,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <div class="w3-row-padding w3-margin-top" style="margin:0 -16px">
+            <!-- <div class="w3-row-padding w3-margin-top" style="margin:0 -16px">
                 <div class="w3-half input-group">
                     <label class="text-pizza"><b>Immagine Prodotto</b></label>
                     <input type="file" name="immagine" class="w3-input w3-border w3-round w3-white">
@@ -192,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label><b>Disponibile nel Menù</b></label>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <hr style="border-top: 1px solid #ddd">
 
