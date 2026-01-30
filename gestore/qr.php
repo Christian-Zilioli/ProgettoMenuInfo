@@ -69,8 +69,9 @@ $qr_api_url = "https://api.qrserver.com/v1/create-qr-code/?size=$dimensioni&data
 
             <div class="w3-container w3-margin-top">
                 <p class="w3-small">Link diretto al menù:</p>
+                
                 <div class="w3-light-grey w3-padding w3-small w3-round">
-                    <?= $url_finale ?>
+                    <a href="<?= $url_finale ?>"><?= $url_finale ?></a>
                 </div>
             </div>
 
